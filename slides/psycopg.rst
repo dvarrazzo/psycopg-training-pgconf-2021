@@ -62,7 +62,7 @@ Zoom: installation
 
    * ``pip install psycopg2``
     
-     + if you have C compiler and client libraries
+     + if you have C compiler and libpq-dev library
 
    * ``pip install psycopg2-binary``
     
@@ -80,8 +80,8 @@ Zoom: installation
 
 ----
 
-Installation for ``psycopg3``
-=============================
+Waiting for ``psycopg3``: installation
+======================================
 
 .. class:: font-bigger
 
@@ -89,7 +89,7 @@ Installation for ``psycopg3``
 
    * ``pip install psycopg3``
 
-     + pure Python (requires client libraries)
+     + pure Python (requires client libraries to run)
 
    * ``pip install psycopg3[c]``: 
 
@@ -335,7 +335,9 @@ Adaptation: only for values
 Data type mapping
 =================
 
-Default data types mapping: no surprise here
+.. class:: font-bigger
+
+    * Default data types mapping: no surprise here
 
 .. table::
     :class: data-types
@@ -349,7 +351,8 @@ Default data types mapping: no surprise here
     +---------------+-----------------+
     | ``int``       | ``smallint``,   |
     |               | ``integer``,    |
-    |               | ``bigint``      |
+    |               | ``bigint``,     |
+    |               | ``numeric``     |
     +---------------+-----------------+
     | ``float``     | ``real``,       |
     |               | ``double``      |
@@ -414,8 +417,9 @@ Mythical JSON(B)!
 
 .. code-block:: python
 
+  >>> from psycopg2.extras import Json
   >>> cur.execute("insert into mytable (jsondata) values (%s)",
-      [Json({'a': 100})])
+  ... [Json({'a': 100})])
 
 ----
 
@@ -486,7 +490,7 @@ Waiting for ``psycopg3``: ``conn.execute()``
 .. class:: font-bigger
 
     * Not really a new object: it's still a cursor
-    * Just pretend the ``fetch()`` methods are not there 😉
+    * Just pretend the ``execute()`` methods is not there 😉
 
 ----
 
@@ -581,7 +585,7 @@ Remember to close your transactions!
 
 .. class:: font-bigger
 
-    + You can use ``with`` on the connection to represent a transaction
+    + Use ``connection.commit()`` and ``connection.rollback()``
 
 .. code-block:: pycon
 
@@ -703,6 +707,53 @@ Typecasting
 
 ----
 
+Basic usage
+===========
+
+The roles of the main actors
+
+.. code-block:: python
+
+    import psycopg2                         # the driver
+    conn = psycopg2.connect("dbname=piro")  # the connection/session
+    cur = conn.cursor()                     # the cursor - holds results
+
+    cur.execute("select 10 as a, 'foo' as b")   # sends command
+    cur.fetchone()                              # retrieve results
+    conn.commit()                               # controls the session
+
+
+Different ways to consume data
+
+.. code-block:: python
+
+    cur.fetchone()      # returns one tuples
+    cur.fetchmany(n)    # returns a list of n tuples
+    cur.fetchall()      # returns a list with all the tuples
+    for t in cur:
+        pass            # iterable of tuples
+
+-----
+
+Notifications 💌
+================
+
+-----
+
+Notifications
+=============
+
+.. class:: font-bigger
+
+    + Send data from PostgreSQL to Python
+
+    + Useful to notify clients when data changed
+
+      + Attach a NOTIFY to a trigger...
+
+
+----
+
 ``pushdemo.py`` architecture
 ============================
 
@@ -713,12 +764,6 @@ Typecasting
 
 Async notification demo
 =======================
-
-Using gevent__, gevent-websocket__, psycogreen__
-
-.. __: http://www.gevent.org/
-.. __: http://www.gelens.org/code/gevent-websocket/
-.. __: https://bitbucket.org/dvarrazzo/psycogreen/
 
 .. class:: apology
 
