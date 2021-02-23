@@ -23,6 +23,11 @@ table.data-types th {
   font-size: 120%;
 }
 
+div.slide p.font-bigger {
+  font-size: 30px;
+  margin-bottom: 15px;
+}
+
 .font-bigger li {
   font-size: 30px;
   margin-bottom: 15px;
