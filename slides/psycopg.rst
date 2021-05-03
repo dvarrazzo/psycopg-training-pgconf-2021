@@ -1,13 +1,15 @@
 ================================
 *psycopg*: Python for PostgreSQL
 ================================
+The present and the future
+--------------------------
 
 .. image:: img/psycopg.png
 
 
 .. class:: text-right
 
-    PGConf.Online 2021, ``'[2021-03-01,2021-03-04)'::daterange``
+    Postgres London 2021, ``'2021-05-12'::date``
 
     Daniele Varrazzo
 
@@ -17,6 +19,95 @@
 
 ----
 
+What is Python?
+===============
+
+.. class:: font-bigger
+
+    Hardly the outsider anymore...
+
+.. image:: img/tiobe.png
+   :width: 800px
+
+----
+
+What is Python?
+===============
+
+.. class:: font-bigger
+
+    - Easy to use
+
+      - Simple syntax
+
+      - Good teaching language
+
+      - Plenty of tutorials
+
+    - Interfaces with everything
+
+      - Easy parsing of text and binary
+
+      - Libraries likely available for any protocol
+
+----
+
+Is it any good with PostgreSQL?
+===============================
+
+.. class:: font-bigger
+
+    - tl; dr: hell yeah!
+
+    - Note: we talk about Python as external language
+
+      - Python as procedural language not considered here
+
+----
+
+Is it any good with PostgreSQL?
+===============================
+
+.. class:: font-bigger
+
+    - Do you really want to do everything *inside* the database?
+
+      - Do you send email from inside the database?
+
+      - Do you query a web service from your SQL query?
+
+      - Do you format protobuffer, or compress a zip file, inside a database?
+
+    - You can do all of that, but it's not necessarily a good idea
+
+      - You would likely use PL/Python anyway...
+
+----
+
+Just write a program
+====================
+
+.. class:: font-bigger
+
+    - Many tasks are better performed outside the database
+
+      - For scalability, deployment, maintenance, 
+
+.. image:: img/script.png
+   :width: 700px
+
+.. class:: font-bigger
+
+    - You want a simple language to interface with the outside
+    
+      - Talking PostgreSQL fluently!
+
+----
+
+psycopg2
+========
+
+----
 
 What is ``psycopg2``?
 =====================
@@ -34,78 +125,62 @@ What is ``psycopg2``?
 
 ----
 
-Have your virtualenv!
-===========
+Installation
+============
+
+.. class:: font-bigger
+
+   * Isolate your environment!
 
 .. code-block:: sh
 
    $ python3 -m venv env
    $ source env/bin/activate
-   (env) $ 
+   (env) $ pip install psycopg2  # requires libpq installed
+   # or
+   (env) $ pip install psycopg2-binary  # on many but not all platforms
 
+
+.. class:: font-bigger
+
+   - Keep app dependencies separate from system dependencies
+
+   - Docker is even better
+
+     - Isolate both Python and non-python dependencies
 
 ----
 
-Basic usage: import
-===================
+Basic usage
+===========
+
+.. class:: font-bigger
+
+   - Import it in your project
 
 .. code-block:: python
 
     import psycopg2
 
+.. class:: font-bigger
+
+   - Create a database connection
+
+.. code-block:: python
+
+    conn = psycopg2.connect("dbname=piro")
+
 ----
 
-Zoom: installation
-==================
+Basic usage: running a query
+============================
 
 .. class:: font-bigger
 
-   * ``pip install psycopg2``
-    
-     + if you have C compiler and libpq-dev library
+   * In the DBAPI model you need a **cursor**
 
-   * ``pip install psycopg2-binary``
-    
-     + on supported platforms (no Alpine Docker image)
-
-   * They both install a ``psycopg2`` package
-
-     + ``import psycopg2`` from Python
-
-   * They cannot coexist, so writing ``requirements.txt`` is problematic
-
-     + You should depend on ``psycopg2``
-
-     + You can use ``psycopg2-binary`` for interactive hacking
-
-----
-
-Waiting for ``psycopg3``: installation
-======================================
-
-.. class:: font-bigger
-
-   **Not yet on PyPI** but this is the plan:
-
-   * ``pip install psycopg3``
-
-     + pure Python (requires client libraries to run)
-
-   * ``pip install psycopg3[c]``: 
-
-     + Faster (requires client libraries and C compiler)
-
-   * ``pip install psycopg3[binary]``: 
-
-     + Faster, no dependency, on supported platforms
-
-   * You can have projects specifying ``psycopg3`` only, and use the "speedup
-     extra" you may need.
-
-----
-
-Basic usage: connection
-=======================
+     * Can be a server side cursor (DECLARE)
+     * Or just a client construct holding a result
 
 .. code-block:: python
 
@@ -113,71 +188,17 @@ Basic usage: connection
 
     conn = psycopg2.connect("dbname=piro")
 
-
-----
-
-Zoom in: connection
-===================
-
-* You can connect with keywords or with a connection string
-
-.. code-block:: python
-
-    conn = psycopg2.connect("dbname=piro user=piro host=somewhere")
-    conn = psycopg2.connect(dbname="piro" user="piro" host="somewhere")
-
-* **Tip:** don't bother with keywords: have the connection string in the settings
-* Why? Because you can use the same with ``psql`` (and ``pg_dump``, etc.)
-
-.. code-block:: sh
-
-    psql "dbname=piro user=piro host=somewhere"
-
-* Easier to configure (can use a single env var)
-* If you need to access the single parts you can use
-  ``psycopg2.extensions.parse_dsn()``
-* **Note:** you can also use ``PG*`` `env vars`__ (``PGDATABASE``,
-  ``PGUSER``...)
-
-.. __: https://www.postgresql.org/docs/current/libpq-envars.html
-
-----
-
-Basic usage: cursor
-===================
-
-.. code-block:: python
-
-    import psycopg2
-
-    conn = psycopg2.connect("dbname=piro")
     cur = conn.cursor()
-
-----
-
-cursor? 🤔
-==========
-
-----
-
-No such a thing in psql...
-==========================
+    cur.execute("select * from generate_series(1, 10)")
 
 .. class:: font-bigger
 
-    + DBAPI design:
-
-      + connections manage sessions and transactions
-      
-      + cursors manage queries and results
-
-      + inspired to server-side cursors, but normally in psycopg2 the state is
-        on the client...
+   - Optional to run simple queries in ``psycopg3``
 
 ----
 
-Basic usage: execute
-====================
+Basic usage: fetching results
+=============================
 
 .. code-block:: python
 
@@ -186,6 +207,45 @@ Basic usage: execute
     conn = psycopg2.connect("dbname=piro")
     cur = conn.cursor()
     cur.execute("select * from generate_series(1, 10)")
+
+    cur.fetchone()
+    (1,)
+
+    cur.fetchmany(3)
+    [(2,), (3,), (4,)]
+
+    cur.fetchall()
+    [(5,), (6,), (7,), (8,), (9,), (10,)]
+
+    cur.fetchone() is None
+    True
+
+----
+
+Basic usage: iterating on results
+=================================
+
+.. code-block:: python
+
+    import psycopg2
+
+    conn = psycopg2.connect("dbname=piro")
+    cur = conn.cursor()
+    cur.execute("select * from generate_series(1, 10)")
+
+    for row in cur:
+        print(row)
+    
+    (1,)
+    (2,)
+    (3,)
+    (4,)
+    (5,)
+    (6,)
+    (7,)
+    (8,)
+    (9,)
+    (10,)
 
 ----
 
@@ -270,65 +330,19 @@ Adaptation
 
 ----
 
-Adaptation
-==========
+Typecasting
+===========
 
-* Mandatory reference
-
-.. image:: img/exploits_of_a_mom.png
-
-.. code-block:: pycon
-
-    >>> cur.execute("INSERT INTO students (name) VALUES ('%s')" % name)
-
-* Would become:
-
-.. code-block:: SQL
-
-    INSERT INTO students (name)
-        VALUES ('Robert'); DROP TABLE students; --')
-
-* Funny, but wrong conclusion: *do not sanitise inputs, let the driver do it!*
-
-.. code-block:: pycon
-
-    >>> cur.execute("insert into students (name) values (%s)" , [name])
-
-----
-
-Adaptation: only for values
-===========================
+.. image:: img/pg-to-py.png
 
 .. class:: font-bigger
 
-   * It doesn't work if you have tables/fields names in variables
+    - Converting data from Postgres to Python
+    - Typecasters have:
 
-.. code-block:: pycon
-
-    >>> cur.execute(
-    ...     "insert into %s values (%s, %s)" ,
-    ...     ["table_name", 10, 20])
-    SyntaxError: syntax error at or near "'table_name'"
-    LINE 1: insert into 'table_name' values (10, 20)
-                        ^
-
-.. class:: font-bigger
-
-   * You can use the ``psycopg2.sql`` module to compose queries dynamically
-
-.. code-block:: pycon
-
-    >>> from psycopg2 import sql
-    >>> cur.execute(
-    ...     sql.SQL("insert into {} values (%s, %s)")
-    ...         .format(sql.Identifier("table_name"))
-    ...     [10, 20])
-    UndefinedTable: relation "table_name" does not exist
-    LINE 1: insert into "table_name" values (10, 20)
-                        ^
-.. class:: font-bigger
-
-   * That's a better error 😅
+      1. one or more OID
+      2. a name
+      3. a conversion function
 
 ----
 
@@ -337,7 +351,8 @@ Data type mapping
 
 .. class:: font-bigger
 
-    * Default data types mapping: no surprise here
+    * Default data types mapping
+    * Widely customisable
 
 .. table::
     :class: data-types
@@ -374,339 +389,6 @@ Data type mapping
 
 ----
 
-
-More Data!
-==========
-
-- ``list`` <-> ``ARRAY``
-
-.. code-block:: python
-
-  >>> cur.execute("""select array_agg(d)::date[]
-      from generate_series('2013-07-11'::date, '2013-07-12'::date,
-          '1 day'::interval) s(d)""")
-  # [datetime.date(2013, 7, 11), datetime.date(2013, 7, 12)]
-
-- [``named``] ``tuple`` <-> composite
-
-.. code-block:: python
-
-  >>> cur.execute("CREATE TYPE card AS (value int, suit text)")
-  >>> psycopg2.extras.register_composite('card', cur)
-  >>> cur.execute("select (8, 'hearts')::card")
-  # card(value=8, suit='hearts')
-
-- Psycopg ``Range`` object <-> ``range``
-
-.. code-block:: python
-
-  >>> cur.execute("select '[0,10)'::int8range")
-  # NumericRange(0, 10, '[)')
-  >>> r.upper_inc, r.lower_inc
-  (False, True)
-
-----
-
-Mythical JSON(B)!
-================
-
-.. class:: font-bigger
-
-    * Anything™ <-> ``json``, ``jsonb``
-    * Need to use a ``Json()`` wrapper to mark you want JSON dumping
-
-.. code-block:: python
-
-  >>> from psycopg2.extras import Json
-  >>> cur.execute("insert into mytable (jsondata) values (%s)",
-  ... [Json({'a': 100})])
-
-----
-
-Basic usage: fetching results
-=============================
-
-.. code-block:: python
-
-    import psycopg2
-
-    conn = psycopg2.connect("dbname=piro")
-    cur = conn.cursor()
-    cur.execute("select * from generate_series(1, 10)")
-
-    cur.fetchone()
-    (1,)
-
-    cur.fetchmany(3)
-    [(2,), (3,), (4,)]
-
-    cur.fetchall()
-    [(5,), (6,), (7,), (8,), (9,), (10,)]
-
-    cur.fetchone() is None
-    True
-----
-
-Basic usage: iterating on results
-=================================
-
-.. code-block:: python
-
-    import psycopg2
-
-    conn = psycopg2.connect("dbname=piro")
-    cur = conn.cursor()
-    cur.execute("select * from generate_series(1, 10)")
-
-    for row in cur:
-        print(row)
-    
-    (1,)
-    (2,)
-    (3,)
-    (4,)
-    (5,)
-    (6,)
-    (7,)
-    (8,)
-    (9,)
-    (10,)
-
-----
-
-Waiting for ``psycopg3``: ``conn.execute()``
-============================================
-
-.. class:: font-bigger
-
-    * A more familar pattern
-
-.. code-block:: python
-
-   with psycopg3.connection(...) as conn:
-       res = conn.execute(query)
-       print(res.fetchall())
-           
-.. class:: font-bigger
-
-    * Not really a new object: it's still a cursor
-    * Just pretend the ``execute()`` methods is not there 😉
-
-----
-
-Other types of records
-======================
-
-.. code-block:: pycon
-
-    >>> from psycopg2 import extras
-
-    >>> cur = cnn.cursor(cursor_factory=extras.NamedTupleCursor)
-    >>> cur.execute(
-    ...     "select 10 as a, 'hello' as b, '2020-02-01'::date as d")
-    >>> cur.fetchone()
-    Record(a=10, b='hello', d=datetime.date(2020, 2, 1))
-
-    >>> cur = cnn.cursor(cursor_factory=extras.RealDictCursor)
-    >>> cur.execute(
-    ...     "select 10 as a, 'hello' as b, '2020-02-01'::date as d")
-    >>> cur.fetchone()
-    {'a': 10, 'b': 'hello', 'd': datetime.date(2020, 2, 1)}
-
-----
-
-Server and Client Cursors
-=========================
-
-.. code-block:: python
-
-    cur = conn.cursor()
-    cur.execute("select * from my_million_rows_table")
-    # you get 1M rows on the client
-    cur.fetchone()
-
-.. class:: font-bigger
-
-   The result is transferred completely to the client
-
-.. code-block:: python
-
-    cur = conn.cursor("my-cursor")
-    cur.execute("select * from my_million_rows_table")
-    # runs DECLARE "my-cursor" CURSOR FOR select * ...
-    cur.fetchone()
-    # you get one row
-
-.. class:: font-bigger
-
-   Only the rows needed are transferred to the client
-
-----
-
-Running queries: auto-transaction
-=================================
-
-.. class:: font-bigger
-
-    + ``psycopg2`` starts a transaction at every new statement.
-
-.. code-block:: pycon
-
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:45:10.919226+00:00
-
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:45:10.919226+00:00
-
-    # same time! we are in a transaction
-
-.. class:: font-bigger
-
-    + Don't leave connections idle in transaction!
-
-::
-
-    piro=# select pid, state from pg_stat_activity
-    piro-# where state is not null;
-    ┌─────────┬─────────────────────┐
-    │   pid   │        state        │
-    ├─────────┼─────────────────────┤
-    │  965924 │ idle                │
-    │ 1486322 │ idle in transaction │
-    │ 1486371 │ active              │
-    └─────────┴─────────────────────┘
-
-----
-
-Remember to close your transactions!
-====================================
-
-.. class:: font-bigger
-
-    + Use ``connection.commit()`` and ``connection.rollback()``
-
-.. code-block:: pycon
-
-    >>> conn = psycopg2.connect("")
-    >>> cur = conn.cursor()
-
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:55:25.717751+00:00
-
-    >>> conn.commit()
-
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:55:27.385814+00:00
-
-    >>> conn.rollback()
-
-----
-
-Autocommit mode
-===============
-
-.. class:: font-bigger
-
-    + ...or you can go without transactions
-
-.. code-block:: pycon
-
-    >>> conn.autocommt = True
-
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:55:25.717751+00:00
-    >>> cur.execute("select current_time")
-    >>> print(cur.fetchone()[0])
-    12:55:27.385814+00:00
-
-.. class:: font-bigger
-
-    + Necessary for certain statements
-
-      + ``CREATE DATABASE``
-      + ``CREATE INDEX CONCURRENTLY``
-
-----
-
-Using blocks to close transactions
-==================================
-
-.. code-block:: pycon
-
-    >>> conn = psycopg2.connect("")
-    >>> cur = conn.cursor()
-
-    >>> with conn:
-    ...     cur.execute("select current_time")
-    ...     print(cur.fetchone()[0])
-    12:55:25.717751+00:00
-
-    >>> with conn:
-    ...     cur.execute("select current_time")
-    ...     print(cur.fetchone()[0])
-    12:55:27.385814+00:00
-
-.. class:: font-bigger
-
-    + Commit leaving the block, roll back in case of error
-    + A bit of unnatural usage of ``with`` though...
-
-----
-
-Waiting for psycopg3: explicit transactions
-===========================================
-
-
-.. class:: font-bigger
-
-    + ``with conn`` closes the connection
-    + ``with conn.transaction()`` delimits a transaction
-    + It can be nested!
-
-.. code-block:: python3
-
-    with psycopg3.connect(CONNINFO) as conn:
-
-        with conn.transaction() as tx1:
-            num_ok = 0
-            for operation in operations:
-                try:
-                    with conn.transaction() as tx2:
-                        unreliable_operation(conn, operation)
-                except Exception:
-                    logger.exception(f"{operation} failed")
-                else:
-                    num_ok += 1
-
-            save_number_of_successes(conn, num_ok)
-
-        # here the transaction is terminated
-
-    # here the connection is closed
-
-----
-
-Typecasting
-===========
-
-.. image:: img/pg-to-py.png
-
-.. class:: font-bigger
-
-    - Converting data from Postgres to Python
-    - Typecasters have:
-
-      1. one or more OID
-      2. a name
-      3. a conversion function
-
-----
-
 Basic usage
 ===========
 
@@ -718,7 +400,7 @@ The roles of the main actors
     conn = psycopg2.connect("dbname=piro")  # the connection/session
     cur = conn.cursor()                     # the cursor - holds results
 
-    cur.execute("select 10 as a, 'foo' as b")   # sends command
+    cur.execute("select %s, %s", [10, "foo"])   # sends command
     cur.fetchone()                              # retrieve results
     conn.commit()                               # controls the session
 
@@ -730,85 +412,181 @@ Different ways to consume data
     cur.fetchone()      # returns one tuples
     cur.fetchmany(n)    # returns a list of n tuples
     cur.fetchall()      # returns a list with all the tuples
-    for t in cur:
-        pass            # iterable of tuples
+    for record in cur:
+        ...             # iterable of tuples
 
 -----
 
-Notifications 💌
-================
+What do you do with it?
+=======================
 
 -----
 
-Notifications
-=============
+Consume a web service
+=====================
+
+.. code-block:: python
+
+   import requests
+
+- Query HTTP/HTTPS services
+- JSON conversion
+- Preprocess data before sending to database
+
+.. image:: img/requests.png
+   :width: 700px
+
+-----
+
+Write a web service!
+====================
+
+.. code-block:: python
+
+   import fastapi
+
+- Your new BFF forever to write strongly typed REST APIs
+
+.. image:: img/fastapi.png
+   :width: 700px
+
+-----
+
+Send messages around
+====================
+
+.. code-block:: python
+
+   import aio_pika
+
+- Drive events from PostgreSQL notifications
+
+.. image:: img/rabbit.png
+   :width: 700px
+
+-----
+
+So, it everything all sorted?
+=============================
 
 .. class:: font-bigger
 
-    + Send data from PostgreSQL to Python
+   * No!
 
-    + Useful to notify clients when data changed
+     * 🐍 Python has evolved
+     * 🐘 Postgres has evolved
+     * 💡 Changes are needed
 
-      + Attach a NOTIFY to a trigger...
-
-
-----
-
-``pushdemo.py`` architecture
-============================
-
-.. image:: img/pushdemo-diagram.png
-
+   * **psycopg3** is on the way!
 
 ----
 
-Async notification demo
+Support for ``asyncio`` 🏹
+==========================
+
+.. class:: font-bigger
+
+    + Allows for collaborative parallelism
+
+      - Control flow switch when I/O is performed
+
+    + Available in current Python 3 versions
+
+.. code-block:: python3
+
+   from psycopg3 import AsyncConnection
+
+   async with AsyncConnection.connect(CONNINFO) as conn:
+       cur = await conn.execute("SELECT * FROM table")
+           print(await cur.fetchall())
+
+----
+
+Transactions as blocks 🤝
+=========================
+
+.. class:: font-bigger
+
+    + Support for transactions (nested, with ``SAVEPOINT``)
+
+.. code-block:: python3
+
+    conn = psycopg3.connect(CONNINFO)
+
+    with conn.transaction() as tx1:
+        num_ok = 0
+        for operation in operations:
+            try:
+                with conn.transaction() as tx2:
+                    unreliable_operation(conn, operation)
+            except Exception:
+                logger.exception(f"{operation} failed")
+            else:
+                num_ok += 1
+
+        save_number_of_successes(conn, num_ok)
+
+----
+
+COPY with Python objects 🚛
+===========================
+
+* Supports text and binary format
+* Copy by record (Python values) or block (preformatted)
+* Allow for async COPY (if producer/consumer is async)
+
+.. code-block:: python3
+
+    records = [(10, 20, "hello"), (40, None, "world")]
+
+    with cursor.copy(
+        "COPY sample (col1, col2, col3) FROM STDIN"
+    ) as copy:
+        for record in records:
+            copy.write_row(record)
+
+.. code-block:: python3
+
+    with open("data.out", "wb") as f:
+        with cursor.copy("COPY table_name TO STDOUT") as copy:
+            for data in copy:
+                f.write(data)
+
+----
+
+...and much more
+================
+
+.. class:: font-bigger
+
+   * Prepared statements
+   * Binary parameters
+   * Easier notifications
+   * libpq low-level access
+   * Pure Python implementation
+   * ...
+
+----
+
+``psycopg3`` needs you!
 =======================
 
-.. class:: apology
+.. class:: font-bigger
 
-    This demo requires the ``pushdemo.py`` script running.
+    +  Close to release!
+    +  Crowdfunded free-software project
 
-.. raw:: html
+.. class:: sponsors
 
-    <script src="js/jquery.min.js"></script>
-    <style type="text/css">
-          .bar {width: 40px; height: 40px;}
-    </style>
-    <script>
-        window.onload = function() {
-            ws = new WebSocket("ws://localhost:7000/data");
-            ws.onopen = function() {
-                $('p.apology').hide();
-                // drop the offline slide
-                $('#target').parents('.slide-wrapper').next().remove();
-            }
-            ws.onmessage = function(msg) {
-                bar = $('#' + msg.data);
-                if (bar.length) {
-                    bar.width(bar.width() + 40);
-                } else {
-                    $('#target').text("DB says: " + msg.data);
-                }
-            }
-        }
-    </script>
-    <p id="red" class="bar" style="background-color: red;">&nbsp;</p>
-    <p id="green" class="bar" style="background-color: green;">&nbsp;</p>
-    <p id="blue" class="bar" style="background-color: blue;">&nbsp;</p>
-    <p id="target"></p>
+   .. image:: img/sponsors.png
+       :width: 500px
 
-.. class:: text-right
+.. class:: font-bigger
 
-    Demo code at https://github.com/dvarrazzo/psycopg-training-pgconf-2021
+    +  💜 `Contributions and sponsorship welcome`__
 
-----
+.. __: https://github.com/sponsors/dvarrazzo/
 
-
-Async notification demo (offline)
-=================================
-
-.. image:: img/pushdemo.png
 
 ----
 
